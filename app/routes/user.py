@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from app.models import UserInfo
 from app.schemas import Token
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from .crud import engine
+from app.crud import engine
 from sqlmodel import Session, select
 
 import os
