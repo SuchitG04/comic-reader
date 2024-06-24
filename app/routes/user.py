@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from app.models import UserInfo
 from app.schemas import Token
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from app.crud import engine
+from app.database import engine
 from sqlmodel import Session, select
 
 import os
@@ -96,3 +96,10 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     if user is None:
         raise credentials_exception
     return user
+
+
+@router.post(
+    "/login"
+)
+async def login(username: str, password: str) -> UserInfo:
+    pass
