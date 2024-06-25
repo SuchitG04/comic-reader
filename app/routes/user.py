@@ -1,13 +1,16 @@
 from datetime import datetime, timezone, timedelta
-import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Annotated
+
+import jwt
 from passlib.context import CryptContext
-from app.models import UserInfo
-from app.schemas import Token
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from app.database import engine
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
+
+from app.database import engine
+from app.models import UserInfo
+from app.schemas import Token, SignUp
 
 import os
 from dotenv import load_dotenv
@@ -33,8 +36,10 @@ def hash_password(plain_password: str) -> str:
 def authenticate_user(username: str, password: str) -> UserInfo | bool:
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.execute(get_user_stmt).one_or_none()[0]
+        user = session.execute(get_user_stmt).one_or_none()
 
+    if user is not None:
+        user = user[0]
     # uncomment for testing to circumvent auth
     # hashed_password = hash_password(password)
     if not user:
@@ -56,8 +61,10 @@ def create_access_token(data: dict, expires_delta: timedelta):
     return encoded_jwt
 
 
+# payload should be email and password
 @router.post(
-    "/token"
+    "/token",
+    tags=["auth"],
 )
 async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
     user = authenticate_user(form_data.username, form_data.password)
@@ -75,7 +82,8 @@ async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) 
 
 
 @router.get(
-    "/user"
+    "/user",
+    tags=["auth"],
 )
 async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     credentials_exception = HTTPException(
@@ -92,14 +100,30 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
         raise credentials_exception
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.execute(get_user_stmt).one_or_none()[0]
+        user = session.execute(get_user_stmt).one_or_none()
     if user is None:
         raise credentials_exception
-    return user
+    return user[0]
 
 
 @router.post(
-    "/login"
+    "/sign_up",
+    tags=["auth"],
+    status_code=status.HTTP_200_OK,
 )
-async def login(username: str, password: str) -> UserInfo:
-    pass
+async def sign_up(signup_payload: SignUp):
+    with Session(engine) as session:
+        get_user_stmt = select(UserInfo).where(UserInfo.username == signup_payload.username)
+        user = session.execute(get_user_stmt).one_or_none()
+
+    if user is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already exists",
+        )
+
+    user = UserInfo(username=signup_payload.username, hash=hash_password(signup_payload.password))
+    with Session(engine) as session:
+        session.add(user)
+        session.commit()
+
