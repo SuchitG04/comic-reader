@@ -123,12 +123,12 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     tags=["auth"],
 )
 async def wrap_get_user(request: Request) -> UserInfo:
-    if request.get("token") is None:
+    if request.cookies.get("token") is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
         )
-    return await get_user(request.get("token"))
+    return await get_user(request.cookies.get("token"))
 
 
 @router.post(
