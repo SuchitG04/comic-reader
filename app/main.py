@@ -4,10 +4,13 @@ from sqlmodel import SQLModel
 
 from app.routes import user
 from app.database import engine
+# from app.routes import files
 from app.files.main import files_app
 
 app = FastAPI()
 app.include_router(user.router)
+# app.include_router(files.router)
+
 app.mount("/files/", files_app)
 
 origins = [

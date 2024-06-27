@@ -7,8 +7,16 @@ import jwt
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Response,
+    Cookie,
+)
 from sqlmodel import Session, select
+from starlette.responses import JSONResponse
 
 from app.database import engine
 from app.models import UserInfo
@@ -67,8 +75,9 @@ def create_access_token(data: dict, expires_delta: timedelta):
 @router.post(
     "/token",
     tags=["auth"],
+    response_model=Token,
 )
-async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) -> Token:
+async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -80,13 +89,14 @@ async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]) 
     access_token = create_access_token(
         {"sub": user.username}, expires_delta=access_token_expires
     )
+    response.set_cookie(
+        key="token",
+        value=access_token,
+        expires=datetime.now(timezone.utc) + access_token_expires,
+    )
     return Token(access_token=access_token, token_type="bearer")
 
 
-@router.get(
-    "/user",
-    tags=["auth"],
-)
 async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -106,6 +116,14 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     if user is None:
         raise credentials_exception
     return user[0]
+
+
+@router.get(
+    "/user",
+    tags=["auth"],
+)
+async def wrap_get_user(token_cookie: Annotated[str, Cookie()]) -> UserInfo:
+    return await get_user(token_cookie)
 
 
 @router.post(
