@@ -1,3 +1,5 @@
+# move dependencies to dependencies.py
+
 from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
