@@ -13,7 +13,7 @@ from fastapi import (
     HTTPException,
     status,
     Response,
-    Cookie,
+    Request,
 )
 from sqlmodel import Session, select
 from starlette.responses import JSONResponse
@@ -122,8 +122,8 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     "/user",
     tags=["auth"],
 )
-async def wrap_get_user(token_cookie: Annotated[str, Cookie()]) -> UserInfo:
-    return await get_user(token_cookie)
+async def wrap_get_user(request: Request) -> UserInfo:
+    return await get_user(request.get("token"))
 
 
 @router.post(
