@@ -104,7 +104,7 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
+    except:
         raise credentials_exception
     username = payload.get("sub")
     if username is None:
