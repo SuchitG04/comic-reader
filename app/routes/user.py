@@ -93,9 +93,8 @@ async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
         key="token",
         value=access_token,
         expires=datetime.now(timezone.utc) + access_token_expires,
-        secure=True,
         samesite=None,
-        domain="http://localhost:5173",
+        domain="lostip.ddns.net",
     )
     return Token(access_token=access_token, token_type="bearer")
 
