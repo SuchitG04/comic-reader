@@ -77,7 +77,7 @@ def create_access_token(data: dict, expires_delta: timedelta):
     tags=["auth"],
     response_model=Token,
 )
-async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], response: Response):
+async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -89,16 +89,12 @@ async def get_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], 
     access_token = create_access_token(
         {"sub": user.username}, expires_delta=access_token_expires
     )
-    response.set_cookie(
-        key="token",
-        value=access_token,
-        expires=datetime.now(timezone.utc) + access_token_expires,
-        samesite=None,
-        domain="lostip.ddns.net",
-    )
     return Token(access_token=access_token, token_type="bearer")
 
-
+@router.get(
+    "/user",
+    tags=["auth"],
+)
 async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -118,19 +114,6 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     if user is None:
         raise credentials_exception
     return user[0]
-
-
-@router.get(
-    "/user",
-    tags=["auth"],
-)
-async def wrap_get_user(request: Request) -> UserInfo:
-    if request.cookies.get("token") is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        )
-    return await get_user(request.cookies.get("token"))
 
 
 @router.post(
