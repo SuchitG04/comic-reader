@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
-import base64
 
 from app.database import engine
 from app.models import BookRepo, Author, ComicThumbnail
@@ -24,6 +23,7 @@ async def get_comic(comic_id: int) -> FileResponse:
             status_code=status.HTTP_404_NOT_FOUND,
         )
     return FileResponse(path=book.file_path)
+
 
 @router.get(
     "/comics/",
@@ -49,6 +49,7 @@ async def get_all_comics():
             }
         )
     return comic_list
+
 
 @router.get(
     "/comics/thumbnail/{comic_id}",

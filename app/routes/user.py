@@ -1,32 +1,10 @@
-# move dependencies to dependencies.py
-
-from datetime import datetime, timezone, timedelta
 from typing import Annotated
-
-import jwt
-from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status,
-    Response,
-    Request,
-)
-from sqlmodel import Session, select
-from starlette.responses import JSONResponse
-
-from app.database import engine
-from app.models import UserInfo
-from app.schemas import Token, SignUp
-from app.auth_utils import *
-
 import os
 from dotenv import load_dotenv
-load_dotenv()
 
+from app.auth_utils import *
+
+load_dotenv()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -35,10 +13,6 @@ ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS"))
 
 router = APIRouter()
 
-
-
-
-# payload should be email and password
 @router.post(
     "/token",
     tags=["auth"],
@@ -77,8 +51,8 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     if username is None:
         raise credentials_exception
     with Session(engine) as session:
-        get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.exec(get_user_stmt).one_or_none()
+        stmt = select(UserInfo).where(UserInfo.username == username)
+        user = session.exec(stmt).one_or_none()
     if user is None:
         raise credentials_exception
     return user
@@ -93,17 +67,14 @@ async def sign_up(signup_payload: SignUp) -> UserInfo:
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == signup_payload.username)
         user = session.exec(get_user_stmt).one_or_none()
-
     if user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists",
         )
-
     user = UserInfo(username=signup_payload.username, hash=hash_password(signup_payload.password))
     with Session(engine) as session:
         session.add(user)
         session.commit()
         session.refresh(user)
-
     return user

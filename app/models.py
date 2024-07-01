@@ -1,5 +1,4 @@
-from sqlmodel import Field, SQLModel, Relationship
-from datetime import date
+from sqlmodel import Field, SQLModel
 
 class UserInfo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)

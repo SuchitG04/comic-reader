@@ -1,23 +1,11 @@
-from datetime import datetime, timezone, timedelta
-
 import jwt
 from passlib.context import CryptContext
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status,
-    Response,
-    Request,
-)
+from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
-from starlette.responses import JSONResponse
+from datetime import datetime, timezone, timedelta
 
 from app.database import engine
 from app.models import UserInfo
-from app.schemas import Token, SignUp
 
 import os
 from dotenv import load_dotenv
@@ -39,9 +27,8 @@ def hash_password(plain_password: str) -> str:
 
 def authenticate_user(username: str, password: str) -> UserInfo | bool:
     with Session(engine) as session:
-        get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.exec(get_user_stmt).one_or_none()
-
+        stmt = select(UserInfo).where(UserInfo.username == username)
+        user = session.exec(stmt).one_or_none()
     # uncomment for testing to circumvent auth
     # hashed_password = hash_password(password)
     if not user:
@@ -61,4 +48,3 @@ def create_access_token(data: dict, expires_delta: timedelta):
         algorithm=ALGORITHM
     )
     return encoded_jwt
-
