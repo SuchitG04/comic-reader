@@ -1,10 +1,19 @@
 from typing import Annotated
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
 import os
 from dotenv import load_dotenv
 
+from app.schemas import Token, SignUp
 from app.auth_utils import *
 
 load_dotenv()
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = os.getenv("SECRET_KEY")
