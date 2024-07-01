@@ -12,6 +12,7 @@ class Token(BaseModel):
     user: UserInfo
 
 class ComicsResponse(BaseModel):
+    id: int
     title: str
     author: str
     thumbnail: str
