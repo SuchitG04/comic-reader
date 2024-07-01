@@ -21,6 +21,7 @@ from starlette.responses import JSONResponse
 from app.database import engine
 from app.models import UserInfo
 from app.schemas import Token, SignUp
+from app.auth_utils import *
 
 import os
 from dotenv import load_dotenv
@@ -35,40 +36,6 @@ ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS"))
 router = APIRouter()
 
 
-def verify_user(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def hash_password(plain_password: str) -> str:
-    return pwd_context.hash(plain_password)
-
-
-def authenticate_user(username: str, password: str) -> UserInfo | bool:
-    with Session(engine) as session:
-        get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.execute(get_user_stmt).one_or_none()
-
-    if user is not None:
-        user = user[0]
-    # uncomment for testing to circumvent auth
-    # hashed_password = hash_password(password)
-    if not user:
-        return False
-    if not verify_user(password, user.hash):
-        return False
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        payload=to_encode,
-        key=SECRET_KEY,
-        algorithm=ALGORITHM
-    )
-    return encoded_jwt
 
 
 # payload should be email and password
@@ -111,21 +78,21 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
         raise credentials_exception
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == username)
-        user = session.execute(get_user_stmt).one_or_none()
+        user = session.exec(get_user_stmt).one_or_none()
     if user is None:
         raise credentials_exception
-    return user[0]
+    return user
 
 
-@router.post(
+@router.put(
     "/sign_up",
     tags=["auth"],
     status_code=status.HTTP_200_OK,
 )
-async def sign_up(signup_payload: SignUp):
+async def sign_up(signup_payload: SignUp) -> UserInfo:
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == signup_payload.username)
-        user = session.execute(get_user_stmt).one_or_none()
+        user = session.exec(get_user_stmt).one_or_none()
 
     if user is not None:
         raise HTTPException(
@@ -137,4 +104,6 @@ async def sign_up(signup_payload: SignUp):
     with Session(engine) as session:
         session.add(user)
         session.commit()
+        session.refresh(user)
 
+    return user
