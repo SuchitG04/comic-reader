@@ -12,3 +12,8 @@ class Token(BaseModel):
     token_type: str
     user: UserInfo
 
+
+class ComicsResponse(BaseModel):
+    title: str
+    author: str
+    thumbnail: str

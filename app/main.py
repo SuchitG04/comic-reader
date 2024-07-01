@@ -5,10 +5,12 @@ from sqlmodel import SQLModel
 from app.routes import user
 from app.database import engine
 from app.routes import files
+from app.routes import comments
 
 app = FastAPI()
 app.include_router(user.router)
 app.include_router(files.router)
+app.include_router(comments.router)
 
 origins = [
     "http://localhost",

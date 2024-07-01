@@ -5,3 +5,4 @@ passlib==1.7.4
 sqlmodel==0.0.19
 starlette==0.37.2
 pydantic==2.7.4
+SQLAlchemy==2.0.30
