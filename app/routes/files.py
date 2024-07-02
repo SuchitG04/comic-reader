@@ -7,10 +7,13 @@ from app.models import BookRepo, Author, ComicThumbnail, ComicPdf
 from app.routes.user import oauth2_scheme
 from app.schemas import ComicsResponse
 
-router = APIRouter(dependencies=[Depends(oauth2_scheme)])
+router = APIRouter(
+    prefix="/comics",
+    dependencies=[Depends(oauth2_scheme)]
+)
 
 @router.get(
-    "/comics/",
+    "/",
     tags=["comics"],
     response_model=list[ComicsResponse]
 )
@@ -35,7 +38,7 @@ async def get_all_comics():
 
 
 @router.get(
-    "/comics/id/{comic_id}",
+    "/id/{comic_id}",
     tags=["comics"]
 )
 async def get_comic(comic_id: int) -> FileResponse:
@@ -54,9 +57,17 @@ async def get_comic(comic_id: int) -> FileResponse:
     return FileResponse(path=book)
 
 
+# change logic to fetch images based on id in bookrepo rather than based on the file name
 @router.get(
-    "/comics/thumbnail/{comic_id}",
+    "/thumbnails/{comic_id}",
     tags=["comics"]
 )
 async def get_comic_thumbnail(comic_id: int) -> FileResponse:
-    return FileResponse(path=f"app/files/thumbnails/{comic_id}.jpg")
+    with Session(engine) as session:
+        stmt = (
+            select(ComicThumbnail.image_path)
+            .join(BookRepo, ComicThumbnail.id == BookRepo.comicthumbnail_id)
+            .where(BookRepo.comicthumbnail_id == comic_id)
+        )
+        thumb_path: str = session.exec(stmt).one_or_none()
+    return FileResponse(path=thumb_path)

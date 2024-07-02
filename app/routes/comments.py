@@ -7,10 +7,13 @@ from app.database import engine
 from app.models import Comment
 from app.schemas import CommentPayload
 
-router = APIRouter(dependencies=[Depends(oauth2_scheme)])
+router = APIRouter(
+    prefix="/comments",
+    dependencies=[Depends(oauth2_scheme)]
+)
 
 @router.get(
-    "/comments/",
+    "/",
     tags=["comments"]
 )
 async def get_comments():
@@ -26,7 +29,7 @@ async def get_comments():
 
 
 @router.get(
-    "/comments/user/{user_id}",
+    "/user/{user_id}",
     tags=["comments"]
 )
 async def get_user_comments(user_id: int):
@@ -40,7 +43,7 @@ async def get_user_comments(user_id: int):
         return {"comments": comments}
 
 @router.put(
-    "/comments/user/{user_id}",
+    "/user/{user_id}",
     tags=["comments"]
 )
 async def create_comment(user_id: int, content: str) -> Comment:

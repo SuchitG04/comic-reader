@@ -1,4 +1,5 @@
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column, Integer, ForeignKey
 
 class UserInfo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -6,26 +7,46 @@ class UserInfo(SQLModel, table=True):
     hash: str
     avatar: str | None = None
 
+
 class BookRepo(SQLModel, table=True):
+    __tablename__ = "bookrepo"
     id: int | None = Field(default=None, primary_key=True)
-    title: str = Field(nullable=False)
-    author_id: int = Field(nullable=False, foreign_key="author.id")
-    comicpdf_id: int = Field(nullable=False, foreign_key="comicpdf.id")
-    comicthumbnail_id: int = Field(foreign_key="comicthumbnail.id")
+    title: str = Field(nullable=False, unique=True)
+    author_id: int = Field(sa_column=Column(Integer, ForeignKey("author.id", ondelete="CASCADE"), nullable=False))
+    comicpdf_id: int = Field(sa_column=Column(Integer, ForeignKey("comicpdf.id", ondelete="CASCADE"), nullable=False))
+    comicthumbnail_id: int = Field(sa_column=Column(Integer, ForeignKey("comicthumbnail.id", ondelete="CASCADE"), nullable=False))
+
+    author: "Author" = Relationship(back_populates="bookrepo")
+    comicpdf: "ComicPdf" = Relationship(back_populates="bookrepo")
+    comicthumbnail: "ComicThumbnail" = Relationship(back_populates="bookrepo")
+
 
 class Author(SQLModel, table=True):
+    __tablename__ = "author"
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(nullable=False, unique=True)
 
+    bookrepo: list[BookRepo] = Relationship(back_populates="author", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+
+
 class ComicPdf(SQLModel, table=True):
+    __tablename__ = "comicpdf"
     id: int | None = Field(default=None, primary_key=True)
     file_path: str = Field(nullable=False, unique=True)
 
+    bookrepo: BookRepo = Relationship(back_populates="comicpdf", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+
+
 class ComicThumbnail(SQLModel, table=True):
+    __tablename__ = "comicthumbnail"
     id: int | None = Field(default=None, primary_key=True)
     image_path: str = Field(nullable=False)
 
+    bookrepo: BookRepo = Relationship(back_populates="comicthumbnail", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+
+
 class Comment(SQLModel, table=True):
+    __tablename__ = "comment"
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(nullable=False, foreign_key="userinfo.id")
+    user_id: int = Field(Column(Integer, ForeignKey("author.id", ondelete="CASCADE"), nullable=False))
     content: str = Field(nullable=False)
