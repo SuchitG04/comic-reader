@@ -9,7 +9,7 @@ from fastapi import (
 import os
 from dotenv import load_dotenv
 
-from app.schemas import Token, SignUp
+from app.schemas import Token, SignUpPayload
 from app.auth_utils import *
 
 load_dotenv()
@@ -72,7 +72,7 @@ async def get_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInfo:
     tags=["auth"],
     status_code=status.HTTP_200_OK,
 )
-async def sign_up(signup_payload: SignUp) -> UserInfo:
+async def sign_up(signup_payload: SignUpPayload) -> UserInfo:
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == signup_payload.username)
         user = session.exec(get_user_stmt).one_or_none()

@@ -5,42 +5,55 @@ from sqlmodel import Session, select
 from app.routes.user import oauth2_scheme
 from app.database import engine
 from app.models import Comment
+from app.schemas import CommentPayload
 
 router = APIRouter(dependencies=[Depends(oauth2_scheme)])
 
-@router.get("/comments/")
+@router.get(
+    "/comments/",
+    tags=["comments"]
+)
 async def get_comments():
     get_comments_stmt = select(Comment)
     with Session(engine) as session:
         comments = session.exec(get_comments_stmt).all()
 
+    # handle this better
     if len(comments) == 0:
         return {"message": "No comments found"}
     else:
         return {"comments": comments}
 
 
-@router.get("/comments/id/{comment_id}")
-async def get_comment(comment_id: int) -> Comment:
-    get_comment_stmt = select(Comment).where(Comment.id == comment_id);
+@router.get(
+    "/comments/user/{user_id}",
+    tags=["comments"]
+)
+async def get_user_comments(user_id: int):
+    """Get all comments made by a user"""
     with Session(engine) as session:
-        comment = session.exec(get_comment_stmt).one()
-    if comment is None:
-        raise HTTPException(
-            detail="Comment not found",
-            status_code=status.HTTP_404_NOT_FOUND
-        )
-    return comment
+        stmt = select(Comment).where(Comment.user_id == user_id)
+        comments = session.exec(stmt).all()
+    if len(comments) == 0:
+        return {"message": "User has no comments"}
+    else:
+        return {"comments": comments}
 
-
-@router.put("/comments/")
-async def create_comment(comment: Comment):
+@router.put(
+    "/comments/user/{user_id}",
+    tags=["comments"]
+)
+async def create_comment(user_id: int, content: str) -> Comment:
+    """Create a new comment from user_id and the comment text"""
+    comment = Comment(user_id=user_id, content=content)
     try:
         with Session(engine) as session:
             session.add(comment)
             session.commit()
+            # refresh to update the comment object with the key created by the db
             session.refresh(comment)
-    except IntegrityError:
+    except IntegrityError as e:
+        print(e)
         raise HTTPException(
             detail="Database integrity compromised.",
             status_code=status.HTTP_409_CONFLICT

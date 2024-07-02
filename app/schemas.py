@@ -1,10 +1,14 @@
 from pydantic import BaseModel
 from app.models import UserInfo
 
-class SignUp(BaseModel):
+class SignUpPayload(BaseModel):
     username: str
     password: str
     confirm_password: str
+
+class CommentPayload(BaseModel):
+    user_id: int
+    content: str
 
 class Token(BaseModel):
     access_token: str
@@ -15,4 +19,3 @@ class ComicsResponse(BaseModel):
     id: int
     title: str
     author: str
-    thumbnail: str

@@ -27,5 +27,5 @@ class ComicThumbnail(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="userinfo.id")
+    user_id: int = Field(nullable=False, foreign_key="userinfo.id")
     content: str = Field(nullable=False)
