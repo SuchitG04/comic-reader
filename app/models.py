@@ -40,7 +40,7 @@ class ComicPdf(SQLModel, table=True):
 class ComicThumbnail(SQLModel, table=True):
     __tablename__ = "comicthumbnail"
     id: int | None = Field(default=None, primary_key=True)
-    image_path: str = Field(nullable=False)
+    image_path: str = Field(nullable=False, unique=True)
 
     bookrepo: BookRepo = Relationship(back_populates="comicthumbnail", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
 
