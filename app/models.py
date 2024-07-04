@@ -26,7 +26,7 @@ class Author(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(nullable=False, unique=True)
 
-    bookrepo: list[BookRepo] = Relationship(back_populates="author", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+    bookrepo: list[BookRepo] = Relationship(back_populates="author", sa_relationship_kwargs={"cascade": "all, delete"})
 
 
 class ComicPdf(SQLModel, table=True):
@@ -34,7 +34,7 @@ class ComicPdf(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     file_path: str = Field(nullable=False, unique=True)
 
-    bookrepo: BookRepo = Relationship(back_populates="comicpdf", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+    bookrepo: BookRepo = Relationship(back_populates="comicpdf", sa_relationship_kwargs={"cascade": "all, delete"})
 
 
 class ComicThumbnail(SQLModel, table=True):
@@ -42,7 +42,7 @@ class ComicThumbnail(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     image_path: str = Field(nullable=False, unique=True)
 
-    bookrepo: BookRepo = Relationship(back_populates="comicthumbnail", sa_relationship_kwargs={"cascade": "delete, delete-orphan"})
+    bookrepo: BookRepo = Relationship(back_populates="comicthumbnail", sa_relationship_kwargs={"cascade": "all, delete"})
 
 
 class Comment(SQLModel, table=True):
