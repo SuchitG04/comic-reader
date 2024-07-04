@@ -16,7 +16,8 @@ from app.models import (
 
 router = APIRouter(
     prefix="/admin",
-    dependencies=[Depends(oauth2_scheme)]
+    dependencies=[Depends(oauth2_scheme)],
+    tags=["admin"],
 )
 
 def rename_file(filename: str, file_dir: str) -> str:
@@ -29,7 +30,7 @@ def rename_file(filename: str, file_dir: str) -> str:
     return filename
 
 
-@router.put("/books")
+@router.put("/books",)
 async def insert_book(
         file: Annotated[UploadFile, File()],
         thumb: Annotated[UploadFile, File()],
@@ -65,7 +66,7 @@ async def insert_book(
     return {"message": "done"}
 
 
-@router.get("/books")
+@router.get("/books",)
 async def get_all_books():
     with Session(engine) as session:
         books = session.exec(select(BookRepo.title)).all()
@@ -87,3 +88,26 @@ async def delete_book(title: str):
         session.delete(book)
         session.commit()
     return {"message": "Book deleted"}
+
+
+@router.get("/authors")
+async def get_all_authors():
+    with Session(engine) as session:
+        authors = session.exec(select(Author.name)).all()
+    if authors is not None:
+        return {"authors": authors}
+    return {"message": "Authors not found"}
+
+@router.delete("/authors")
+async def delete_author(name: str):
+    with Session(engine) as session:
+        stmt = select(Author).where(Author.name == name)
+        author = session.exec(stmt).one_or_none()
+        if author is None:
+            return HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Author not found"
+            )
+        session.delete(author)
+        session.commit()
+    return {"message": "Author deleted"}
