@@ -71,7 +71,7 @@ async def sign_up(signup_payload: SignUpPayload) -> UserInfo:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists",
         )
-    user = UserInfo(username=signup_payload.username, hash=hash_password(signup_payload.password))
+    user = UserInfo(username=signup_payload.username, email=signup_payload.email, hash=hash_password(signup_payload.password))
     with Session(engine) as session:
         session.add(user)
         session.commit()

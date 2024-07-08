@@ -1,11 +1,14 @@
+from datetime import datetime
+from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
+from pydantic import AfterValidator
 
 from app.routes.user import oauth2_scheme
 from app.database import engine
-from app.models import Comment
-from app.schemas import CommentPayload
+from app.models import Comment, BookRepo, UserInfo
+from app.schemas import CommentPayload, CommentsResponse
 
 router = APIRouter(
     prefix="/comments",
@@ -13,11 +16,12 @@ router = APIRouter(
 )
 
 @router.get(
-    "/",
+    "/book/{book_id}",
     tags=["comments"]
 )
-async def get_comments():
-    get_comments_stmt = select(Comment)
+async def get_comments(b_id: int):
+    """Get all comments for a book"""
+    get_comments_stmt = select(Comment).where(Comment.bookrepo_id == b_id)
     with Session(engine) as session:
         comments = session.exec(get_comments_stmt).all()
 
@@ -43,14 +47,26 @@ async def get_user_comments(user_id: int):
         return {"comments": comments}
 
 @router.put(
-    "/user/{user_id}",
+    "/user/{user_id}/book/{book_id}",
     tags=["comments"]
 )
-async def create_comment(user_id: int, content: str) -> Comment:
+async def create_comment(
+    user_id: int,
+    book_id: int,
+    content: Annotated[CommentPayload, AfterValidator(lambda c: c.content)]
+) -> CommentsResponse:
     """Create a new comment from user_id and the comment text"""
-    comment = Comment(user_id=user_id, content=content)
+    comment = Comment(user_id=user_id, bookrepo_id=book_id, content=content, timestamp=datetime.now())
     try:
         with Session(engine) as session:
+            username = session.exec(
+                select(UserInfo.username).where(UserInfo.id == user_id)
+            ).one_or_none()
+            if not username:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist"
+                )
             session.add(comment)
             session.commit()
             # refresh to update the comment object with the key created by the db
@@ -61,4 +77,5 @@ async def create_comment(user_id: int, content: str) -> Comment:
             detail="Database integrity compromised.",
             status_code=status.HTTP_409_CONFLICT
         )
+    comment = CommentsResponse(**comment.model_dump(), username=username)
     return comment

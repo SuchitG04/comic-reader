@@ -1,11 +1,12 @@
 from sqlmodel import Field, SQLModel, Relationship
 from sqlalchemy import Column, Integer, ForeignKey
+from datetime import datetime
 
 class UserInfo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(nullable=False, unique=True)
-    hash: str
-    avatar: str | None = None
+    email: str = Field(nullable=False, unique=True)
+    hash: str = Field(exclude=True)
 
 
 class BookRepo(SQLModel, table=True):
@@ -48,5 +49,7 @@ class ComicThumbnail(SQLModel, table=True):
 class Comment(SQLModel, table=True):
     __tablename__ = "comment"
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(Column(Integer, ForeignKey("author.id", ondelete="CASCADE"), nullable=False))
+    user_id: int = Field(Column(Integer, ForeignKey("userinfo.id", ondelete="CASCADE"), nullable=False))
+    bookrepo_id: int = Field(Column(Integer, ForeignKey("bookrepo.id", ondelete="CASCADE"), nullable=False))
     content: str = Field(nullable=False)
+    timestamp: datetime = Field(nullable=False)
