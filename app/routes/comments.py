@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel import Session, select, distinct
 from pydantic import AfterValidator
 
 from app.routes.user import oauth2_scheme
 from app.database import engine
-from app.models import Comment, BookRepo, UserInfo
+from app.models import Comment, UserInfo
 from app.schemas import CommentPayload, CommentsResponse
 
 router = APIRouter(
@@ -19,17 +19,34 @@ router = APIRouter(
     "/book/{book_id}",
     tags=["comments"]
 )
-async def get_comments(b_id: int):
+async def get_comments(book_id: int) -> dict[str, list[CommentsResponse]] | dict[str, str]:
     """Get all comments for a book"""
-    get_comments_stmt = select(Comment).where(Comment.bookrepo_id == b_id)
     with Session(engine) as session:
+        get_comments_stmt = select(Comment).where(Comment.bookrepo_id == book_id)
         comments = session.exec(get_comments_stmt).all()
+        def get_username_retrieving_stmt(user_id):
+            """Returns a statement selecting the username corresponding to the given user_id"""
+            get_usernames_stmt = (
+                select(distinct(UserInfo.username))
+                .join(Comment, Comment.user_id == UserInfo.id)
+                .where(Comment.bookrepo_id == book_id)
+                .where(Comment.user_id == user_id)
+            )
+            return get_usernames_stmt
 
-    # handle this better
-    if len(comments) == 0:
-        return {"message": "No comments found"}
-    else:
-        return {"comments": comments}
+        comments_out = []
+        # gets and adds the username to the response model.
+        # does this by first retrieving username given the user_id in each of the comments instance and of course the
+        # book_id in the path params
+        for comment in comments:
+            stmt = get_username_retrieving_stmt(comment.user_id)
+            username = session.exec(stmt)
+            comments_out.append(CommentsResponse(**comment.model_dump(), username=username))
+
+        if len(comments) == 0:
+            return {"message": "No comments found"}
+        else:
+            return {"comments": comments_out}
 
 
 @router.get(
