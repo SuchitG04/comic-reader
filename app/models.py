@@ -1,12 +1,16 @@
 from sqlmodel import Field, SQLModel, Relationship
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
 from datetime import datetime
 
 class UserInfo(SQLModel, table=True):
+    __tablename__ = "userinfo"
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(nullable=False, unique=True)
     email: str = Field(nullable=False, unique=True)
     hash: str = Field(exclude=True)
+
+    comment: list["Comment"] | None = Relationship(back_populates="userinfo", sa_relationship_kwargs={"cascade": "all, delete"})
+    readingprogress: list["ReadingProgress"] | None = Relationship(back_populates="userinfo", sa_relationship_kwargs={"cascade": "all, delete"})
 
 
 class BookRepo(SQLModel, table=True):
@@ -20,6 +24,8 @@ class BookRepo(SQLModel, table=True):
     author: "Author" = Relationship(back_populates="bookrepo")
     comicpdf: "ComicPdf" = Relationship(back_populates="bookrepo")
     comicthumbnail: "ComicThumbnail" = Relationship(back_populates="bookrepo")
+    comment: list["Comment"] | None = Relationship(back_populates="bookrepo", sa_relationship_kwargs={"cascade": "all, delete"})
+    readingprogress: list["ReadingProgress"] | None = Relationship(back_populates="bookrepo", sa_relationship_kwargs={"cascade": "all, delete"})
 
 
 class Author(SQLModel, table=True):
@@ -49,7 +55,25 @@ class ComicThumbnail(SQLModel, table=True):
 class Comment(SQLModel, table=True):
     __tablename__ = "comment"
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(Column(Integer, ForeignKey("userinfo.id", ondelete="CASCADE"), nullable=False))
-    bookrepo_id: int = Field(Column(Integer, ForeignKey("bookrepo.id", ondelete="CASCADE"), nullable=False))
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("userinfo.id", ondelete="CASCADE"), nullable=False))
+    bookrepo_id: int = Field(sa_column=Column(Integer, ForeignKey("bookrepo.id", ondelete="CASCADE"), nullable=False))
     content: str = Field(nullable=False)
     timestamp: datetime = Field(nullable=False)
+
+    userinfo: UserInfo = Relationship(back_populates="comment")
+    bookrepo: BookRepo = Relationship(back_populates="comment")
+
+    __table_args__ = (UniqueConstraint("user_id", "bookrepo_id", name="unique_comment"),)
+
+
+class ReadingProgress(SQLModel, table=True):
+    __tablename__ = "readingprogress"
+    id: int | None = Field(default=None, primary_key=True)
+    page_num: int = Field(nullable=False)
+    user_id: int = Field(sa_column=Column(Integer, ForeignKey("userinfo.id", ondelete="CASCADE"), nullable=False))
+    bookrepo_id: int = Field(sa_column=Column(Integer, ForeignKey("bookrepo.id", ondelete="CASCADE"), nullable=False))
+
+    userinfo: UserInfo = Relationship(back_populates="readingprogress")
+    bookrepo: BookRepo = Relationship(back_populates="readingprogress")
+
+    __table_args__ = (UniqueConstraint("user_id", "bookrepo_id", name="unique_readingprogress"),)

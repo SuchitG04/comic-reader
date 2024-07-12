@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.models import UserInfo, Comment
 
 class SignUpPayload(BaseModel):
@@ -8,7 +8,14 @@ class SignUpPayload(BaseModel):
     confirm_password: str
 
 class CommentPayload(BaseModel):
-    content: str
+    user_id: int
+    book_id: int
+    content: str = Field(exclude=True)
+
+class ReadingProgressPayload(BaseModel):
+    user_id: int
+    book_id: int
+    page_num: int
 
 class Token(BaseModel):
     access_token: str
@@ -20,5 +27,6 @@ class ComicsResponse(BaseModel):
     title: str
     author: str
 
-class CommentsResponse(Comment):
+class CommentsResponse(BaseModel):
+    comment: Comment
     username: str

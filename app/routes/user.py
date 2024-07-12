@@ -66,14 +66,19 @@ async def sign_up(signup_payload: SignUpPayload) -> UserInfo:
     with Session(engine) as session:
         get_user_stmt = select(UserInfo).where(UserInfo.username == signup_payload.username)
         user = session.exec(get_user_stmt).one_or_none()
-    if user is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists",
-        )
-    user = UserInfo(username=signup_payload.username, email=signup_payload.email, hash=hash_password(signup_payload.password))
-    with Session(engine) as session:
-        session.add(user)
-        session.commit()
+        if user is not None:
+            raise HTTPException(
+                status_code=status.http_400_bad_request,
+                detail="user already exists",
+            )
+        user = UserInfo(username=signup_payload.username, email=signup_payload.email, hash=hash_password(signup_payload.password))
+        try:
+            session.add(user)
+        except Exception as e:
+            session.rollback()
+            print(e)
+            raise e
+        else:
+            session.commit()
         session.refresh(user)
     return user
