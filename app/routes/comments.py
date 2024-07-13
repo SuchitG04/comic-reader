@@ -1,9 +1,6 @@
 from datetime import datetime
-from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Depends
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select, distinct
-from pydantic import AfterValidator
 
 from app.routes.user import oauth2_scheme
 from app.database import engine
@@ -59,7 +56,7 @@ async def get_user_comments(user_id: int):
         return {"comments": comments}
 
 @router.put("/")
-async def create_comment(payload: CommentPayload,) -> CommentsResponse:
+async def create_comment(payload: CommentPayload) -> CommentsResponse:
     """Create a new comment from user_id and the comment text"""
     comment = Comment(user_id=payload.user_id, bookrepo_id=payload.book_id, content=payload.content, timestamp=datetime.now())
     with Session(engine) as session:

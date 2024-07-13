@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from app.models import UserInfo, Comment
 
 class SignUpPayload(BaseModel):
@@ -10,7 +10,7 @@ class SignUpPayload(BaseModel):
 class CommentPayload(BaseModel):
     user_id: int
     book_id: int
-    content: str = Field(exclude=True)
+    content: str
 
 class ReadingProgressPayload(BaseModel):
     user_id: int

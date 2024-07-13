@@ -63,8 +63,6 @@ class Comment(SQLModel, table=True):
     userinfo: UserInfo = Relationship(back_populates="comment")
     bookrepo: BookRepo = Relationship(back_populates="comment")
 
-    __table_args__ = (UniqueConstraint("user_id", "bookrepo_id", name="unique_comment"),)
-
 
 class ReadingProgress(SQLModel, table=True):
     __tablename__ = "readingprogress"
@@ -75,5 +73,3 @@ class ReadingProgress(SQLModel, table=True):
 
     userinfo: UserInfo = Relationship(back_populates="readingprogress")
     bookrepo: BookRepo = Relationship(back_populates="readingprogress")
-
-    __table_args__ = (UniqueConstraint("user_id", "bookrepo_id", name="unique_readingprogress"),)
